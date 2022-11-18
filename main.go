@@ -1,38 +1,121 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+	"time"
+)
+
+const conferenceTickets int = 50
+
+var conferenceName = "Go Conference"
+var remainingTickets uint = 50
+var bookings = make([]UserData, 0)
+
+type UserData struct {
+	firstName       string
+	lastName        string
+	email           string
+	numberOfTickets uint
+}
+
+var wg = sync.WaitGroup{}
 
 func main() {
 
-	var name = "Middle-Earth"
-	fmt.Printf("Hey! Welcome to the %v!\n", name)
-	fmt.Println("The journey is about to start!")
+	greetUsers()
 
-	// fmt.Println(name)
-	const totalSeats uint = 60
-	var remainingSeats int = 60
+	// for {
+	firstName, lastName, email, userTickets := getUserInput()
+	isValidName, isValidEmail, isValidTicketNumber := validateUserInput(firstName, lastName, email, userTickets)
 
-	fmt.Println("Total available seats:", totalSeats)
-	fmt.Printf("But there are only %v seats available to be booked!\n", remainingSeats)
+	if isValidName && isValidEmail && isValidTicketNumber {
 
-	// var bookings [20]string
-	// bookings[0] = userName
+		bookTicket(userTickets, firstName, lastName, email)
 
-	// var firstName string
-	// var lastName string
-	// var userTicket int
+		wg.Add(1)
+		go sendTicket(userTickets, firstName, lastName, email)
 
-	// fmt.Println("Please enter first name:")
-	// fmt.Scan(&firstName)
-	// fmt.Println("Please enter last name:")
-	// fmt.Scan(&lastName)
+		firstNames := getFirstNames()
+		fmt.Printf("The first names of bookings are: %v\n", firstNames)
 
-	// fmt.Printf("User %v %v has booked %v tickets.\n", firstName, lastName, userTicket)
-	// fmt.Printf("Also userName is %T and userTicket is %T\n", userName, userTicket)
-	sum := 0
-	for i := 0; i <= 5; i++ {
-		sum += i
+		if remainingTickets == 0 {
+			// end program
+			fmt.Println("Our conference is booked out. Come back next year.")
+			// break
+		}
+	} else {
+		if !isValidName {
+			fmt.Println("first name or last name you entered is too short")
+		}
+		if !isValidEmail {
+			fmt.Println("email address you entered doesn't contain @ sign")
+		}
+		if !isValidTicketNumber {
+			fmt.Println("number of tickets you entered is invalid")
+		}
 	}
-	fmt.Printf("The sum till 5 is %v.\n", sum)
+	//}
+	wg.Wait()
+}
 
+func greetUsers() {
+	fmt.Printf("Welcome to %v booking application\n", conferenceName)
+	fmt.Printf("We have total of %v tickets and %v are still available.\n", conferenceTickets, remainingTickets)
+	fmt.Println("Get your tickets here to attend")
+}
+
+func getFirstNames() []string {
+	firstNames := []string{}
+	for _, booking := range bookings {
+		firstNames = append(firstNames, booking.firstName)
+	}
+	return firstNames
+}
+
+func getUserInput() (string, string, string, uint) {
+	var firstName string
+	var lastName string
+	var email string
+	var userTickets uint
+
+	fmt.Println("Enter your first name: ")
+	fmt.Scan(&firstName)
+
+	fmt.Println("Enter your last name: ")
+	fmt.Scan(&lastName)
+
+	fmt.Println("Enter your email address: ")
+	fmt.Scan(&email)
+
+	fmt.Println("Enter number of tickets: ")
+	fmt.Scan(&userTickets)
+
+	return firstName, lastName, email, userTickets
+}
+
+func bookTicket(userTickets uint, firstName string, lastName string, email string) {
+	remainingTickets = remainingTickets - userTickets
+
+	var userData = UserData{
+		firstName:       firstName,
+		lastName:        lastName,
+		email:           email,
+		numberOfTickets: userTickets,
+	}
+
+	bookings = append(bookings, userData)
+	fmt.Printf("List of bookings is %v\n", bookings)
+
+	fmt.Printf("Thank you %v %v for booking %v tickets. You will receive a confirmation email at %v\n", firstName, lastName, userTickets, email)
+	fmt.Printf("%v tickets remaining for %v\n", remainingTickets, conferenceName)
+}
+
+func sendTicket(userTickets uint, firstName string, lastName string, email string) {
+	time.Sleep(50 * time.Second)
+	var ticket = fmt.Sprintf("%v tickets for %v %v", userTickets, firstName, lastName)
+	fmt.Println("#################")
+	fmt.Printf("Sending ticket:\n %v \nto email address %v\n", ticket, email)
+	fmt.Println("#################")
+	wg.Done()
 }
