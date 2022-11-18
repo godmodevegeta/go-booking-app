@@ -1,1 +1,1 @@
-# go-booking-app
+# go-cli-booking-app
